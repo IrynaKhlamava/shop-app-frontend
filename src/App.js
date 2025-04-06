@@ -1,25 +1,73 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useEffect, useState, useCallback } from "react";
+import { Routes, Route, Navigate } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import Login from './components/Login';
+import ProductList from './components/ProductList';
+import Cart from './components/Cart';
+import Register from './components/Register';
+import AdminProductManager from './pages/AdminProductManager';
+import { getCart } from './services/cart';
+import UserProfile from './components/UserProfile';
+import OrderHistory from './components/OrderHistory';
+import RequireAuth from './components/RequireAuth';
+import AdminUserViewer from "./components/AdminUserViewer";
+import { getRoleFromToken } from './utils/authUtils';
 
 function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+    const [cart, setCart] = useState(null);
+
+    const userId = localStorage.getItem("userId");
+    const role = getRoleFromToken();
+    const isAdmin = role === "ROLE_ADMIN";
+
+    const refreshCart = useCallback(() => {
+        if (!userId) return;
+        getCart(userId)
+            .then(res => setCart(res.data))
+            .catch(err => console.error("Failed to refresh cart", err));
+    }, [userId]);
+
+    useEffect(() => {
+        refreshCart();
+    }, [refreshCart]);
+
+    return (
+        <>
+            <Navbar />
+            <div className="container mt-4">
+                <Routes>
+                    <Route path="/" element={
+                        <RequireAuth>
+                            <ProductList userId={userId} onCartUpdate={refreshCart} cart={cart} />
+                        </RequireAuth>
+                    } />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
+                    <Route path="/cart" element={
+                        <RequireAuth>
+                            <Cart userId={userId} cart={cart} setCart={setCart} />
+                        </RequireAuth>
+                    } />
+                    <Route path="/profile" element={
+                        <RequireAuth>
+                            <UserProfile userId={userId} />
+                        </RequireAuth>
+                    } />
+                    <Route path="/orders" element={
+                        <RequireAuth>
+                            <OrderHistory userId={userId} />
+                        </RequireAuth>
+                    } />
+                    <Route path="/admin/products" element={
+                        isAdmin ? <AdminProductManager /> : <Navigate to="/" />
+                    } />
+                    <Route path="/admin/users" element={
+                        isAdmin ? <AdminUserViewer /> : <Navigate to="/" />
+                    } />
+                </Routes>
+            </div>
+        </>
+    );
 }
 
 export default App;
