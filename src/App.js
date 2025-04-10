@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Login from './components/Login';
 import ProductList from './components/ProductList';
@@ -15,9 +15,11 @@ import { getRoleFromToken } from './utils/authUtils';
 
 function App() {
     const [cart, setCart] = useState(null);
+    const [userId, setUserId] = useState(localStorage.getItem("userId"));
+    const [role, setRole] = useState(getRoleFromToken());
 
-    const userId = localStorage.getItem("userId");
-    const role = getRoleFromToken();
+    const location = useLocation();
+
     const isAdmin = role === "ROLE_ADMIN";
 
     const refreshCart = useCallback(() => {
@@ -26,6 +28,11 @@ function App() {
             .then(res => setCart(res.data))
             .catch(err => console.error("Failed to refresh cart", err));
     }, [userId]);
+
+    useEffect(() => {
+        setUserId(localStorage.getItem("userId"));
+        setRole(getRoleFromToken());
+    }, [location]);
 
     useEffect(() => {
         refreshCart();
