@@ -22,9 +22,20 @@ function Cart({ userId, cart, setCart }) {
 
     const handleQuantityChange = (productId, newQty) => {
         if (newQty < 1) return;
+
         updateItemQuantity(userId, productId, newQty)
             .then(res => setCart(res.data))
-            .catch(err => console.error("Error updating quantity", err));
+            .catch(err => {
+                console.error("Error updating quantity", err);
+
+                const errorMessage = err.response?.data?.message;
+
+                if (errorMessage) {
+                    alert(errorMessage);
+                } else {
+                    alert("Failed to update quantity.");
+                }
+            });
     };
 
     const handleRemove = (productId) => {
@@ -60,6 +71,19 @@ function Cart({ userId, cart, setCart }) {
     return (
         <div className="container mt-4">
             <h3>Your Cart</h3>
+
+            {cart.missingProducts && cart.missingProducts.length > 0 && (
+                <div className="alert alert-warning">
+                    <strong>Some products are no longer available:</strong>
+                    <ul className="mb-0">
+                        {cart.missingProducts.map(product => (
+                            <li key={product.id}>{product.name}</li>
+                        ))}
+                    </ul>
+                    They have been removed from your cart.
+                </div>
+            )}
+
             <ul className="list-group mb-3">
                 {cart.items.map(item => (
                     <li key={item.productId} className="list-group-item d-flex justify-content-between align-items-center">
